@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pekora Audio Downloader</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      width: 320px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 10px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      background: #22c55e;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #16a34a;
+    }
+
+    a {
+      display: block;
+      margin-top: 15px;
+      color: #38bdf8;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>🐰 Pekora Audio Downloader</h2>
+  <p>Enter the audio ID</p>
+
+  <input type="text" id="audioId" placeholder="Example: 1234567890">
+
+  <button onclick="downloadAudio()">Download</button>
+
+  <a id="link" target="_blank"></a>
+</div>
+
+<script>
+function downloadAudio() {
+  const id = document.getElementById("audioId").value.trim();
+
+  if (!id) {
+    alert("Please enter a valid ID");
+    return;
+  }
+
+  // Using pekora.zip instead of roblox
+  const url = `https://pekora.zip/v1/asset/?id=${id}`;
+
+  const link = document.getElementById("link");
+  link.href = url;
+  link.textContent = url;
+
+  // Open automatically
+  window.open(url, "_blank");
+}
+</script>
+
+</body>
+</html>
