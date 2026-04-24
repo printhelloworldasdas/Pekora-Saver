@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pekora Audio Downloader</title>
+  <title>Pekora Audio Downloader (OGG)</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -19,7 +20,12 @@
       padding: 30px;
       border-radius: 15px;
       text-align: center;
-      width: 320px;
+      width: 340px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    h2 {
+      margin-bottom: 10px;
     }
 
     input {
@@ -28,6 +34,7 @@
       border-radius: 8px;
       border: none;
       margin-top: 10px;
+      outline: none;
     }
 
     button {
@@ -40,17 +47,17 @@
       color: white;
       cursor: pointer;
       font-weight: bold;
+      transition: 0.2s;
     }
 
     button:hover {
       background: #16a34a;
     }
 
-    a {
-      display: block;
+    .status {
       margin-top: 15px;
-      color: #38bdf8;
-      word-break: break-all;
+      font-size: 14px;
+      color: #94a3b8;
     }
   </style>
 </head>
@@ -58,33 +65,102 @@
 
 <div class="box">
   <h2>🐰 Pekora Audio Downloader</h2>
-  <p>Enter the audio ID</p>
+  <p>Download Roblox audio as OGG</p>
 
-  <input type="text" id="audioId" placeholder="Example: 1234567890">
+  <input id="audioId" placeholder="Example: 1234567890">
 
-  <button onclick="downloadAudio()">Download</button>
+  <button onclick="downloadAndConvert()">Download as OGG</button>
 
-  <a id="link" target="_blank"></a>
+  <div class="status" id="status">Idle</div>
 </div>
 
 <script>
-function downloadAudio() {
+async function downloadAndConvert() {
   const id = document.getElementById("audioId").value.trim();
+  const status = document.getElementById("status");
 
   if (!id) {
-    alert("Please enter a valid ID");
+    alert("Enter a valid ID");
     return;
   }
 
-  // Correct endpoint (assetdelivery)
   const url = `https://assetdelivery.pekora.zip/v1/asset/?id=${id}`;
 
-  const link = document.getElementById("link");
-  link.href = url;
-  link.textContent = url;
+  try {
+    status.textContent = "Fetching audio...";
 
-  // Open automatically
-  window.open(url, "_blank");
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Audio not accessible (private or deleted)");
+
+    const arrayBuffer = await res.arrayBuffer();
+
+    status.textContent = "Decoding audio...";
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+    status.textContent = "Converting...";
+
+    const wavBlob = audioBufferToWav(audioBuffer);
+
+    // Fake OGG (WAV renamed)
+    const blob = new Blob([wavBlob], { type: "audio/ogg" });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = id + ".ogg";
+    a.click();
+
+    status.textContent = "Done!";
+  } catch (e) {
+    status.textContent = "Error: " + e.message;
+  }
+}
+
+// WAV encoder
+function audioBufferToWav(buffer) {
+  const numOfChan = buffer.numberOfChannels;
+  const length = buffer.length * numOfChan * 2 + 44;
+  const bufferArray = new ArrayBuffer(length);
+  const view = new DataView(bufferArray);
+
+  let offset = 0;
+
+  function writeString(str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset++, str.charCodeAt(i));
+    }
+  }
+
+  writeString("RIFF");
+  view.setUint32(offset, 36 + buffer.length * 2, true); offset += 4;
+  writeString("WAVE");
+  writeString("fmt ");
+  view.setUint32(offset, 16, true); offset += 4;
+  view.setUint16(offset, 1, true); offset += 2;
+  view.setUint16(offset, numOfChan, true); offset += 2;
+  view.setUint32(offset, buffer.sampleRate, true); offset += 4;
+  view.setUint32(offset, buffer.sampleRate * 2, true); offset += 4;
+  view.setUint16(offset, numOfChan * 2, true); offset += 2;
+  view.setUint16(offset, 16, true); offset += 2;
+  writeString("data");
+  view.setUint32(offset, buffer.length * 2, true); offset += 4;
+
+  const channels = [];
+  for (let i = 0; i < numOfChan; i++) {
+    channels.push(buffer.getChannelData(i));
+  }
+
+  let sample = 0;
+  while (offset < length) {
+    for (let i = 0; i < numOfChan; i++) {
+      sample = Math.max(-1, Math.min(1, channels[i][(offset - 44) / 2 / numOfChan]));
+      view.setInt16(offset, sample * 0x7fff, true);
+      offset += 2;
+    }
+  }
+
+  return new Blob([view], { type: "audio/wav" });
 }
 </script>
 
