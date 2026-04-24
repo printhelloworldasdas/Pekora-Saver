@@ -76,8 +76,8 @@ function downloadAudio() {
     return;
   }
 
-  // Using pekora.zip instead of roblox
-  const url = `https://pekora.zip/v1/asset/?id=${id}`;
+  // Correct endpoint (assetdelivery)
+  const url = `https://assetdelivery.pekora.zip/v1/asset/?id=${id}`;
 
   const link = document.getElementById("link");
   link.href = url;
